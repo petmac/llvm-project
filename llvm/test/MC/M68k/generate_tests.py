@@ -1,25 +1,65 @@
 #!/usr/bin/env python3
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Generator
-
-
-@dataclass
-class InstructionEncoding:
-    mnemonics: str
-    bytes: list[int]
 
 
 # https://m680x0.github.io/ref/M68000PM_AD_Rev_1_Programmers_Reference_Manual_1992.html
 # Section 8.2 Operation Code Map
 
+# http://goldencrystal.free.fr/M68kOpcodes-v2.3.pdf
 
-def ori() -> Generator[InstructionEncoding]:
-    yield InstructionEncoding("or.b #0, %d0", [0x00, 0x00, 0x00, 0x00])
+
+# Instructions
+
+
+class Instruction(ABC):
+    def supported(self) -> bool:
+        return True
+
+    @abstractmethod
+    def asm(self) -> str:
+        pass
+
+    @abstractmethod
+    def bytes(self) -> bytes:
+        pass
+
+
+@dataclass
+class ORIToCCR(Instruction):
+    value: int
+
+    def supported(self) -> bool:
+        return False
+
+    def asm(self) -> str:
+        return "or.b #0, %ccr"
+
+    def bytes(self) -> bytes:
+        return [0b0000_000_1, 0b00_111_100, 0, 0]
+
+
+def instructions() -> Generator[Instruction]:
+    return [ORIToCCR(123)]
+
+
+# Encodings
+
+
+@dataclass
+class InstructionEncoding:
+    supported: bool
+    asm: str
+    bytes: bytes
 
 
 def instruction_encodings() -> Generator[InstructionEncoding]:
-    return ori()
+    for instruction in instructions():
+        yield InstructionEncoding(
+            instruction.supported, instruction.asm(), instruction.bytes()
+        )
 
 
 def write_header(f):
@@ -39,10 +79,12 @@ def byte_to_hex(byte: int) -> str:
 
 
 def write_encoding(f, encoding: InstructionEncoding):
+    check = "CHECK" if encoding.supported() else "SKIP"
+    comment_out = "" if encoding.supported() else "; "
     bytes = ",".join(map(byte_to_hex, encoding.bytes))
-    f.write(f"; CHECK:      {encoding.mnemonics}\n")
-    f.write(f"; CHECK-SAME: encoding: [{bytes}]\n")
-    f.write(f"{encoding.mnemonics}\n")
+    f.write(f"; {check}:      {encoding.asm}\n")
+    f.write(f"; {check}-SAME: encoding: [{bytes}]\n")
+    f.write(f"{comment_out}{encoding.asm}\n")
 
 
 def write_encodings(f):

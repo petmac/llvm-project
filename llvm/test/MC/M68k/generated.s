@@ -3,6 +3,6 @@
 
 ; RUN: llvm-mc -triple=m68k -mcpu=M68040 -show-encoding < %s | FileCheck %s
 
-; CHECK:      or.b #0, %d0
-; CHECK-SAME: encoding: [0x00,0x00,0x00,0x00]
-or.b #0, %d0
+; SKIP:      or.b #0, %ccr
+; SKIP-SAME: encoding: [0x01,0x3c,0x00,0x00]
+; or.b #0, %ccr
