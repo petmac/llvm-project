@@ -15,7 +15,7 @@ from typing import Generator
 
 
 class Instruction(ABC):
-    def supported(self) -> bool:
+    def supported() -> bool:
         return True
 
     @abstractmethod
@@ -31,7 +31,7 @@ class Instruction(ABC):
 class ORIToCCR(Instruction):
     value: int
 
-    def supported(self) -> bool:
+    def supported() -> bool:
         return False
 
     def asm(self) -> str:
@@ -58,7 +58,7 @@ class InstructionEncoding:
 def instruction_encodings() -> Generator[InstructionEncoding]:
     for instruction in instructions():
         yield InstructionEncoding(
-            instruction.supported, instruction.asm(), instruction.bytes()
+            type(instruction).supported(), instruction.asm(), instruction.bytes()
         )
 
 
@@ -79,8 +79,8 @@ def byte_to_hex(byte: int) -> str:
 
 
 def write_encoding(f, encoding: InstructionEncoding):
-    check = "CHECK" if encoding.supported() else "SKIP"
-    comment_out = "" if encoding.supported() else "; "
+    check = "CHECK" if encoding.supported else "SKIP"
+    comment_out = "" if encoding.supported else "; "
     bytes = ",".join(map(byte_to_hex, encoding.bytes))
     f.write(f"; {check}:      {encoding.asm}\n")
     f.write(f"; {check}-SAME: encoding: [{bytes}]\n")
